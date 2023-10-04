@@ -4,10 +4,11 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tensorflow import keras
 from tensorflow.keras import layers
+import plotly.graph_objects as go
 
 # Generate a synthetic dataset with random data
 # Please replace these lines with your own dataset if you want
-n_samples = 69420 # Number of data points
+n_samples = 100000  # Number of data points
 np.random.seed(0)
 
 data = pd.DataFrame({
@@ -30,6 +31,7 @@ y = data[['Predicted_X', 'Predicted_Y', 'Predicted_Z']]
 # Standardize Input (X, Y, Z, Time)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
+X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
 
 # Building Neural Network
 model = keras.Sequential([
@@ -44,7 +46,7 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 # Train Model
 model.fit(X_scaled, y, epochs=50, batch_size=32, verbose=0)
 
-#Predict Position Based On Time
+# Predict Position Based On Time
 def predict_position(input_time):
     # Create a new input with X, Y, Z, and the provided time
     new_input = np.array([[1, 2, 3, input_time]])  # Replace with your input data
@@ -61,3 +63,22 @@ predicted_positions = predict_position(input_time)
 
 print("Predicted Positions:")
 print(predicted_positions)
+
+#3D Scatter Plot with Plotly
+fig = go.Figure(data=[go.Scatter3d(
+    x=predicted_positions[:, 0],
+    y=predicted_positions[:, 1],
+    z=predicted_positions[:, 2],
+    mode='markers',
+    marker=dict(size=5, color='red'),
+    name='Predicted Position'
+)])
+
+# Set labels for the axes
+fig.update_layout(scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
+
+# Set the title for the plot
+fig.update_layout(title='Predicted 3D Position')
+
+# Show the 3D plot for the predicted positions using Plotly
+fig.show()
