@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 # Generate a synthetic dataset with random data
 # Please replace these lines with your own dataset if you want
-n_samples = 100000  # Number of data points
+n_samples = 1000  # Number of data points
 np.random.seed(0)
 
 data = pd.DataFrame({
@@ -46,7 +46,7 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 # Train Model
 model.fit(X_scaled, y, epochs=50, batch_size=32, verbose=0)
 
-# Predict Position Based On Time
+# Function to predict position based on time
 def predict_position(input_time):
     # Create a new input with X, Y, Z, and the provided time
     new_input = np.array([[1, 2, 3, input_time]])  # Replace with your input data
@@ -57,28 +57,69 @@ def predict_position(input_time):
     
     return predicted_positions
 
-# Allow For The Manual Input Of Time
-input_time = float(input("Enter the time value: "))
-predicted_positions = predict_position(input_time)
+# Allow for manual input of time and period
+input_time = float(input("Enter the starting time value: "))
+period = float(input("Enter the period of time: "))
+end_time = input_time + period
 
-print("Predicted Positions:")
-print(predicted_positions)
+# Create a list to store predicted positions and time points over time
+time_points = []
+predicted_positions_list = []
 
-#3D Scatter Plot with Plotly
-fig = go.Figure(data=[go.Scatter3d(
-    x=predicted_positions[:, 0],
-    y=predicted_positions[:, 1],
-    z=predicted_positions[:, 2],
+while input_time <= end_time:
+    predicted_positions = predict_position(input_time)
+    time_points.append(input_time)
+    predicted_positions_list.append(predicted_positions)
+    input_time += 0.1  # You can adjust the time step as needed
+
+print("Predicted Positions Over Time:")
+for t, positions in zip(time_points, predicted_positions_list):
+    print(f"Time: {t:.2f}, Positions: {positions}")
+
+# Create a 3D scatter plot with Plotly to visualize the positions over time
+fig = go.Figure()
+
+# Create an empty trace for the particle
+particle_trace = go.Scatter3d(
+    x=[],
+    y=[],
+    z=[],
     mode='markers',
     marker=dict(size=5, color='red'),
-    name='Predicted Position'
-)])
+    name='Particle'
+)
+
+fig.add_trace(particle_trace)
 
 # Set labels for the axes
 fig.update_layout(scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'))
 
 # Set the title for the plot
-fig.update_layout(title='Predicted 3D Position')
+fig.update_layout(title='Predicted 3D Position Over Time')
 
-# Show the 3D plot for the predicted positions using Plotly
+# Define animation frames
+frames = []
+
+for i in range(len(time_points)):
+    frame = go.Frame(
+        data=[go.Scatter3d(
+            x=[predicted_positions_list[i][0][0]],
+            y=[predicted_positions_list[i][0][1]],
+            z=[predicted_positions_list[i][0][2]],
+            mode='markers',
+            marker=dict(size=5, color='red'),
+            name=f'Time: {time_points[i]:.2f}'
+        )],
+        name=f'Time: {time_points[i]:.2f}'
+    )
+    frames.append(frame)
+
+# Update frames
+fig.update(frames=frames)
+
+# Set animation duration and show the animated 3D plot for the positions over time using Plotly
+fig.update_layout(updatemenus=[dict(type='buttons', showactive=False, buttons=[dict(label='Play',
+                                            method='animate',
+                                            args=[None, dict(frame=dict(duration=500, redraw=True), fromcurrent=True, mode='immediate')])])])
+
 fig.show()
